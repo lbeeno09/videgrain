@@ -1,3 +1,6 @@
+# Dev Env level ignores
+*.code-workspace
+
 # Prerequisites
 *.d
 

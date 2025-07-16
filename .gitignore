@@ -1,5 +1,10 @@
 # Dev Env level ignores
+.vs/
 *.code-workspace
+
+# Output dirs
+bin/
+bin-int/
 
 # Prerequisites
 *.d

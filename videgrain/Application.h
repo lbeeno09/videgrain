@@ -9,6 +9,7 @@
 
 #include <tchar.h>
 #include <iostream>
+#include <vector>
 
 #ifdef _DEBUG
 #define DX12_ENABLE_DEBUG_LAYER
@@ -39,7 +40,6 @@ public:
     static const int APP_SRV_HEAP_SIZE = 64;
 
     static LRESULT WINAPI StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 
 private:
     struct FrameContext

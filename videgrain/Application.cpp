@@ -43,7 +43,7 @@ bool Application::Init()
     // Create application window
     m_wc = { sizeof(m_wc), CS_CLASSDC, StaticWndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"Videgrain", nullptr };
     RegisterClassExW(&m_wc);
-    m_hwnd = CreateWindowW(m_wc.lpszClassName, L"Videgrain", WS_OVERLAPPEDWINDOW, 100, 100, (int)(1280 * main_scale), (int)(800 * main_scale), nullptr, nullptr, m_wc.hInstance, this);
+    m_hwnd = CreateWindowW(m_wc.lpszClassName, L"Videgrain", WS_OVERLAPPEDWINDOW, 100, 100, (int)(1280 * main_scale), (int)(720 * main_scale), nullptr, nullptr, m_wc.hInstance, this);
 
     // Initialize Direct3D
     if(!CreateDeviceD3D(m_hwnd))
@@ -51,7 +51,7 @@ bool Application::Init()
         CleanupDeviceD3D();
         UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
 
-        return 1;
+        return 1;   
     }
 
     // Show Window

@@ -146,8 +146,6 @@
     <ClCompile Include="..\vendor\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\vendor\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="Gui.cpp" />
-    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="videgrain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -157,8 +155,6 @@
     <ClInclude Include="..\vendor\imgui\imgui.h" />
     <ClInclude Include="..\vendor\imgui\imgui_internal.h" />
     <ClInclude Include="Application.h" />
-    <ClInclude Include="Gui.h" />
-    <ClInclude Include="Renderer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\vendor\imgui\misc\debuggers\imgui.natstepfilter" />

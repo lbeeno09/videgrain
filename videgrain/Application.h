@@ -28,7 +28,7 @@ public:
 
     void Run();
 private:
-    bool Init();
+    void Init();
     void Loop();
     void Cleanup();
 

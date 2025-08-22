@@ -27,14 +27,12 @@ Application::~Application()
 
 void Application::Run()
 {
-    if(Init())
-    {
-        Loop();
-    }
+    Init();
+    Loop();
     Cleanup();
 }
 
-bool Application::Init()
+void Application::Init()
 {
     // Make process DPI aware and obtain main monitor scale
     ImGui_ImplWin32_EnableDpiAwareness();
@@ -51,7 +49,7 @@ bool Application::Init()
         CleanupDeviceD3D();
         UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
 
-        return 1;   
+        std::exit(1);   
     }
 
     // Show Window
@@ -64,6 +62,10 @@ bool Application::Init()
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    //io.ConfigViewportsNoAutoMerge = true;
+    //io.ConfigViewportsNoTaskBarIcon = true;
 
     // Setup ImGui style
     ImGui::StyleColorsDark();
@@ -73,6 +75,17 @@ bool Application::Init()
     ImGuiStyle& style = ImGui::GetStyle();
     style.ScaleAllSizes(main_scale);
     style.FontScaleDpi = main_scale;
+    // [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    io.ConfigDpiScaleFonts = true;
+    // [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+    io.ConfigDpiScaleViewports = true;
+
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
 
     // Setup Platform/Renderer backends
     ImGui_ImplWin32_Init(m_hwnd);
@@ -96,7 +109,9 @@ bool Application::Init()
 
         app->m_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle);
     };
+    // Before 1.91.6: our signature was using a single descriptor. From 1.92, specifying SrvDescriptorAllocFn/SrvDescriptorFreeFn will be required to benefit from new features.
     ImGui_ImplDX12_Init(&init_info);
+    //ImGui_ImplDX12_Init(g_pd3dDevice, APP_NUM_FRAMES_IN_FLIGHT, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap, g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(), g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
 
     // Load fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -155,6 +170,9 @@ void Application::Loop()
         ImGui_ImplDX12_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+
+        // Docking enabled
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
         // 1. show big demo window
         if(show_demo_window)
@@ -231,6 +249,13 @@ void Application::Loop()
         m_pd3dCommandList->Close();
 
         m_pd3dCommandQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&m_pd3dCommandList);
+
+        // Update and Render additional Platform Windows
+        if(ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
 
         // Present
         HRESULT hr = m_pSwapChain->Present(1, 0); // present w/ vsync

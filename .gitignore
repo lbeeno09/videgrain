@@ -1,3 +1,7 @@
+build/
+deps/ffmpeg/*
+deps/glad/*
+
 # Dev Env level ignores
 .vs/
 *.code-workspace

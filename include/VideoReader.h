@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstdint>
 
@@ -6,8 +6,9 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
-#include <libavutil/avutil.h>
 }
+
+#include <vector>
 
 class VideoReader
 {
@@ -16,9 +17,12 @@ public:
 	~VideoReader();
 
 	bool open(const char* filename);
-	bool readFrame(uint8_t* outData, int targetWidth, int targetHeight);
-	bool seekFrame(int64_t frameIdx);
+	void decodePacket(AVPacket* pkt, std::vector<uint8_t>& buffer);	
+	void seekFrame(int64_t frameIdx);
 	void close();
+
+	AVFormatContext* GetFormatCtx() const { return formatCtx; }
+	int GetVideoStreamIdx() const { return videoStreamIdx; }
 
 	int width;
 	int height;
@@ -30,9 +34,7 @@ public:
 private:
 	AVFormatContext* formatCtx;
 	AVCodecContext* codecCtx;
-	SwsContext* swsCtx;
 	AVFrame* frame;
-	AVPacket* packet;
+	SwsContext* swsCtx = nullptr;
 	int videoStreamIdx;
-
 };

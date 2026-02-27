@@ -17,6 +17,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCES
 	src/main.cpp
 	src/VideoReader.cpp
+	src/AudioReader.cpp
+	src/Renderer.cpp
+	src/VideoPlayer.cpp
+	src/UI.cpp
 )
 
 # Find OpenGL Package
@@ -62,6 +66,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	${IMGUI_DIR}/backends
 	deps/glfw/include
 	deps/glad/include
+	deps/miniaudio
 )
 
 # Link everything
@@ -70,6 +75,7 @@ target_link_libraries(${PROJECT_NAME}
 	avformat
 	avutil
 	swscale
+	swresample
 	OpenGL::GL
 	glad
 	glfw

@@ -1,18 +1,17 @@
 ﻿// Videgrain.cpp : Defines the entry point for the application.
 //
 
-#include "VideoReader.h"
+#include "VideoPlayer.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
-#include <cstdio>
-#include <iostream>
-#include <vector>
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -23,19 +22,19 @@ int main(int, char**)
 {
     glfwSetErrorCallback(glfw_error_callback);
     if(!glfwInit())
-        return 1;
+    {
+        return -1;
+    }
 
     // GL 450
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     // Create window with graphics context
     float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
-    GLFWwindow* window = glfwCreateWindow((int)(1280 * main_scale), (int)(800 * main_scale), "VIdegrain", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow((int)(1280 * main_scale), (int)(800 * main_scale), "Videgrain", nullptr, nullptr);
     if(window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
@@ -44,8 +43,6 @@ int main(int, char**)
     // Init glad
     if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-
         return -1;
     }
 
@@ -54,7 +51,7 @@ int main(int, char**)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     //io.ConfigViewportsNoAutoMerge = true;
@@ -102,29 +99,10 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
     //IM_ASSERT(font != nullptr);
 
-    // Setup Video Reader
-    VideoReader reader;
-    GLuint videoTexture;
-    std::vector<uint8_t> frameData;
-    bool isLoaded = reader.open("test_video.mp4");
-    if(isLoaded)
-    {
-        frameData.resize(reader.width * reader.height * 4);
-
-        // Create Texture for Video
-        glGenTextures(1, &videoTexture);
-        glBindTexture(GL_TEXTURE_2D, videoTexture);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // prevent stretching on edge
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, reader.width, reader.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    }
+    VideoPlayer player;
+    player.load("test_video.mp4");
 
     double lastTime = glfwGetTime();
-    bool isPlaying = true;
-
     // Main loop
     while(!glfwWindowShouldClose(window))
     {
@@ -141,26 +119,8 @@ int main(int, char**)
         }
 
         double currentTime = glfwGetTime();
-        double frameDelay = 1.0 / reader.fps;
-        if(isPlaying)
-        {
-            if(currentTime - lastTime >= frameDelay)
-            {
-                if(isLoaded && reader.readFrame(frameData.data(), reader.width, reader.height))
-                {
-                    glBindTexture(GL_TEXTURE_2D, videoTexture);
-                    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, reader.width, reader.height, GL_RGBA, GL_UNSIGNED_BYTE, frameData.data());
-
-                    lastTime = currentTime;
-                }
-                else
-                {
-                    isPlaying = false;
-                }
-            }
-        }
+        player.update(currentTime -lastTime);
+        lastTime = currentTime;
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -168,65 +128,7 @@ int main(int, char**)
         ImGui::NewFrame();
         ImGui::DockSpaceOverViewport();
 
-        // Video Window
-        ImGui::Begin("Video");
-        {
-            if(isLoaded && videoTexture != 0)
-            {
-                ImVec2 region = ImGui::GetContentRegionAvail();
-                float scale = std::min(region.x / reader.width, region.y / reader.height);
-                ImVec2 displaySize = ImVec2(reader.width * scale, reader.height * scale);
-                
-                ImGui::Image((ImTextureID)(uintptr_t)videoTexture, displaySize);
-            }
-            else
-            {
-                ImGui::Text("No Video Loaded");
-            }
-        }
-        ImGui::End();
-
-        // Timeline window
-        ImGui::Begin("Timeline");
-        {
-            const char* buttonLabel = isPlaying ? "Pause" : "Play";
-            if(ImGui::Button(buttonLabel))
-            {
-                isPlaying = !isPlaying;
-            }
-            ImGui::SameLine();
-
-            // Slider
-            int currentF = (int)reader.currentFrameIndex;
-            if(ImGui::SliderInt("Frame", &currentF, 0, (int)reader.totalFrames))
-            {
-                //isPlaying = false;
-                reader.seekFrame(currentF);
-            }
-
-            ImGui::Text("Time: %.2f / %.2f seconds", (double)reader.currentFrameIndex / reader.fps, (double)reader.totalFrames / reader.fps);
-        }
-        ImGui::End();
-
-        ImGui::Begin("Properties");
-        {
-            ImGui::Text("File: test_video.mp4");
-            ImGui::Separator();
-            ImGui::Text("Resolution: %d x %d", reader.width, reader.height);
-            ImGui::Text("Frame Rate: %.2f", reader.fps);
-            ImGui::Text("Total Frames: %lld", reader.totalFrames);
-
-            if(ImGui::BeginTable("info", 2)) 
-            {
-                ImGui::TableNextRow();
-
-                ImGui::TableSetColumnIndex(0); ImGui::Text("Current Frame");
-                ImGui::TableSetColumnIndex(1); ImGui::Text("%lld", reader.currentFrameIndex);
-
-                ImGui::EndTable();
-            }
-        }
-        ImGui::End();
+        player.render();
 
         // Rendering
         ImGui::Render();
@@ -252,8 +154,6 @@ int main(int, char**)
     }
 
     // Cleanup
-    reader.close();
-    glDeleteTextures(1, &videoTexture);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

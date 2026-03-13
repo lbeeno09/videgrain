@@ -1,16 +1,4 @@
-[submodule "vendor/imgui"]
-	path = vendor/imgui
-	url = https://github.com/ocornut/imgui
-[submodule "vendor/ffmpeg"]
-	path = vendor/ffmpeg
-	url = https://git.ffmpeg.org/ffmpeg.git
 [submodule "deps/imgui"]
 	path = deps/imgui
 	url = https://github.com/ocornut/imgui
 	branch = docking
-[submodule "deps/glm"]
-	path = deps/glm
-	url = https://github.com/g-truc/glm
-[submodule "deps/glfw"]
-	path = deps/glfw
-	url = https://github.com/glfw/glfw
